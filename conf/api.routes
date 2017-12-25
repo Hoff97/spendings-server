@@ -1,0 +1,48 @@
+->     /spending                      spending.Routes
+
+###
+#  summary: Sign out of account
+#  responses:
+#    200:
+#      description: success
+###
+GET    /signOut                  controllers.Authentication.signOut
+
+###
+#  summary: Sign into an existing account
+#  parameters:
+#    - name: body
+#      schema:
+#        $ref: '#/definitions/spendings.model.SignInForm'
+#  responses:
+#    200:
+#      description: success
+###
+POST   /signIn                   controllers.Authentication.login
+
+###
+#  summary: Returns the currently logged in user
+#  parameters:
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.User'
+###
+POST   /user                   controllers.Authentication.user
+
+###
+#  summary: Create a new account
+#  parameters:
+#    - name: body
+#      schema:
+#        $ref: '#/definitions/spendings.model.SignUpForm.Data'
+#  responses:
+#    200:
+#      description: success
+###
+POST   /signUp                   controllers.Authentication.signUp

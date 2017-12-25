@@ -1,0 +1,76 @@
+###
+#  summary: Query all spendings by date, category
+#  parameters:
+#  - in: header
+#    name: X-Page
+#    schema:
+#      type: integer
+#    default: 0
+#  - in: header
+#    name: X-Page-Size
+#    schema:
+#      type: integer
+#    default: 20
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+###
+GET      /   controllers.SpendingController.searchSpendings(search: Option[String], category: Option[Int], sort:Option[String], sortDir: Boolean, from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp])
+
+###
+#  summary: Query all spendings sum by category
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+###
+GET      /sum   controllers.SpendingController.sumSpendings(from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp])
+
+###
+#  summary: Query the event with a specific id
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+###
+GET      /:id                         controllers.SpendingController.getSpending(id: Int)
+
+###
+#  summary: Delete a Spending
+#  responses:
+#    200:
+#      description: Spending deleted
+###
+DELETE   /:id                         controllers.SpendingController.deleteSpending(id: Int)
+
+###
+#  summary: Create a spending
+#  parameters:
+#    - name: body
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+###
+POST     /                            controllers.SpendingController.createSpending
+
+###
+#  summary: Update a spending with a specific id
+#  parameters:
+#    - name: body
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+#  responses:
+#    200:
+#      description: success
+#      schema:
+#        $ref: '#/definitions/spendings.model.Spending'
+###
+PUT      /:id                         controllers.SpendingController.updateSpending(id: Int)
