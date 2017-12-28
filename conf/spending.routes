@@ -11,6 +11,10 @@
 #    schema:
 #      type: integer
 #    default: 20
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success
@@ -21,16 +25,26 @@ GET      /   controllers.SpendingController.searchSpendings(search: Option[Strin
 
 ###
 #  summary: Query all spendings sum by category
+#  parameters:
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success
 #      schema:
 #        $ref: '#/definitions/spendings.model.Spending'
 ###
-GET      /sum   controllers.SpendingController.sumSpendings(from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp])
+GET      /sum   controllers.SpendingController.sumSpendings(from: java.sql.Timestamp, to: java.sql.Timestamp)
 
 ###
 #  summary: Query the event with a specific id
+#  parameters:
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success
@@ -41,6 +55,11 @@ GET      /:id                         controllers.SpendingController.getSpending
 
 ###
 #  summary: Delete a Spending
+#  parameters:
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: Spending deleted
@@ -50,9 +69,13 @@ DELETE   /:id                         controllers.SpendingController.deleteSpend
 ###
 #  summary: Create a spending
 #  parameters:
-#    - name: body
-#      schema:
-#        $ref: '#/definitions/spendings.model.Spending'
+#  - name: body
+#    schema:
+#      $ref: '#/definitions/spendings.model.Spending'
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success
@@ -64,9 +87,13 @@ POST     /                            controllers.SpendingController.createSpend
 ###
 #  summary: Update a spending with a specific id
 #  parameters:
-#    - name: body
-#      schema:
-#        $ref: '#/definitions/spendings.model.Spending'
+#  - name: body
+#    schema:
+#      $ref: '#/definitions/spendings.model.Spending'
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success

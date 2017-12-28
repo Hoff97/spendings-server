@@ -1,7 +1,14 @@
 ->     /spending                      spending.Routes
 
+->     /category                      category.Routes
+
 ###
 #  summary: Sign out of account
+#  parameters:
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success

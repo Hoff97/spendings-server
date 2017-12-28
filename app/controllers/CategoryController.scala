@@ -16,26 +16,19 @@ import spendings.model._
 import spendings.model.Category._
 import spendings.model.detail.SpendingDetail._
 import java.sql.Timestamp
+import com.mohiva.play.silhouette.api._
+import spendings.auth._
 
-class CategoryController @Inject()(cc: ControllerComponents, protected val dbConfigProvider: DatabaseConfigProvider)
+class CategoryController @Inject()(cc: ControllerComponents,
+                                   protected val dbConfigProvider: DatabaseConfigProvider,
+                                   silhouette: Silhouette[AuthEnv])
     (implicit context: ExecutionContext)
     extends AbstractController(cc)
     with HasDatabaseConfigProvider[JdbcProfile]{
 
   val log = Logger("api.spendings")
 
-  def getCategory(id: Int) = Action.async { implicit request: Request[AnyContent] =>
-    log.debug("Rest request to get category tree")
-
-    val q = for(s <- category if s.id === id.bind) yield s;
-
-    db.run(q.result).map(x => x.headOption match {
-      case Some(r) => Ok(Json.toJson(r))
-      case _ => NotFound
-    })
-  }
-
-  def deleteCategory(id: Int) = Action.async { implicit request: Request[AnyContent] =>
+  def deleteCategory(id: Int) = silhouette.SecuredAction.async { implicit request: Request[AnyContent] =>
     log.debug("Rest request to delete category")
 
     val q = category.filter(_.id === id.bind).delete
@@ -46,7 +39,7 @@ class CategoryController @Inject()(cc: ControllerComponents, protected val dbCon
     }
   }
 
-  def updateCategory(id: Int) = Action.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
+  def updateCategory(id: Int) = silhouette.SecuredAction.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
     log.debug("Rest request to update category")
 
     val q = category.filter(_.id === id.bind).update(request.body)
@@ -57,13 +50,13 @@ class CategoryController @Inject()(cc: ControllerComponents, protected val dbCon
     }
   }
 
-  def getCategories() = Action.async { implicit request: Request[AnyContent] =>
+  def getCategories() = silhouette.SecuredAction.async { implicit request: Request[AnyContent] =>
     log.debug("Rest request to get Categories")
 
     db.run(category.result).map(x => Ok(Json.toJson(x)))
   }
 
-  def createCategory() = Action.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
+  def createCategory() = silhouette.SecuredAction.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
     log.debug("Rest request to create category")
 
     val inserted = db.run(insertAndReturn[Category,CategoryTable](category,request.body))

@@ -2,6 +2,7 @@ package controllers
 
 import scala.concurrent.ExecutionContext
 
+import com.mohiva.play.silhouette.api._
 import javax.inject._
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -18,18 +19,22 @@ import spendings.model.Search._
 import spendings.model.detail.SpendingDetail._
 import java.sql.Timestamp
 import spendings.util.DateTime._
+import spendings.auth._
 
-class SpendingController @Inject()(cc: ControllerComponents, protected val dbConfigProvider: DatabaseConfigProvider)
+class SpendingController @Inject()(cc: ControllerComponents,
+                                   protected val dbConfigProvider: DatabaseConfigProvider,
+                                   silhouette: Silhouette[AuthEnv])
     (implicit context: ExecutionContext)
     extends AbstractController(cc)
     with HasDatabaseConfigProvider[JdbcProfile]{
 
   val log = Logger("api.spendings")
 
-  def getSpending(id: Int) = Action.async { implicit request: Request[AnyContent] =>
+  def getSpending(id: Int) = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to get spending")
 
-    val q = for(s <- spending if s.id === id.bind) yield s;
+    val q = for(s <- spending if s.id === id.bind
+                if s.userFk === request.identity.id.getOrElse(-1)) yield s;
 
     db.run(q.detailed).map(x => x.headOption match {
       case Some(r) => Ok(Json.toJson(r))
@@ -37,10 +42,10 @@ class SpendingController @Inject()(cc: ControllerComponents, protected val dbCon
     })
   }
 
-  def deleteSpending(id: Int) = Action.async { implicit request: Request[AnyContent] =>
+  def deleteSpending(id: Int) = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to delete spending")
 
-    val q = spending.filter(_.id === id.bind).delete
+    val q = spending.filter(x => x.id === id.bind && x.userFk === request.identity.id.getOrElse(-1)).delete
 
     db.run(q).map {
       case 0 => NotFound
@@ -48,10 +53,10 @@ class SpendingController @Inject()(cc: ControllerComponents, protected val dbCon
     }
   }
 
-  def updateSpending(id: Int) = Action.async(parse.json(spendingReads)) { implicit request: Request[Spending] =>
+  def updateSpending(id: Int) = silhouette.SecuredAction.async(parse.json(spendingReads)) { implicit request =>
     log.debug("Rest request to update spending")
 
-    val q = spending.filter(_.id === id.bind).update(request.body)
+    val q = spending.filter(x => x.id === id.bind && x.userFk === request.identity.id.getOrElse(-1)).update(request.body)
 
     db.run(q).map {
       case 0 => NotFound
@@ -61,7 +66,7 @@ class SpendingController @Inject()(cc: ControllerComponents, protected val dbCon
 
   def searchSpendings(search: Option[String], category: Option[Int],
                       sort:Option[String], sortDir: Boolean,
-                      from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp]) = Action.async { implicit request: Request[AnyContent] =>
+                      from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp]) = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to search Spendings")
 
     val fromO = from.getOrElse(new Timestamp(40000,0,0,0,0,0,0))
@@ -75,13 +80,14 @@ class SpendingController @Inject()(cc: ControllerComponents, protected val dbCon
       if s.categoryFk === category.getOrElse(-1) || category.getOrElse(-1).bind === -1
       if s.date >= fromO
       if s.date <= toO
+      if s.userFk === request.identity.id.getOrElse(-1)
     } yield s
 
     val s = q.sortColumn(sort,sortDir).queryPaged.detailed
     returnPaged(s,q,db)
   }
 
-  def sumSpendings(from: java.sql.Timestamp, to: java.sql.Timestamp) = Action.async { implicit request: Request[AnyContent] =>
+  def sumSpendings(from: java.sql.Timestamp, to: java.sql.Timestamp) = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to sum spendings")
 
     to.setHours(23)
@@ -91,16 +97,19 @@ class SpendingController @Inject()(cc: ControllerComponents, protected val dbCon
     val q = for {
       s <- spending if s.date >= from
       if s.date <= to
+      if s.userFk === request.identity.id.getOrElse(-1)
     } yield s
 
     val s = q.groupBy(_.categoryFk).map{ case (c,s) => (c,s.map(_.amount).sum,s.length) }
     db.run(s.result).map(x => Ok(Json.toJson(x)))
   }
 
-  def createSpending() = Action.async(parse.json(spendingReads)) { implicit request: Request[Spending] =>
+  def createSpending() = silhouette.SecuredAction.async(parse.json(spendingReads)) { implicit request =>
     log.debug("Rest request to create spending")
 
-    val inserted = db.run(insertAndReturn[Spending,SpendingTable](spending,request.body))
+    val s = request.body.copy(userFk = request.identity.id.getOrElse(request.body.userFk))
+
+    val inserted = db.run(insertAndReturn[Spending,SpendingTable](spending,s))
 
     inserted.map(x => Ok(Json.toJson(x)))
   }
