@@ -1,7 +1,7 @@
 swagger: "2.0"
 info: 
-  title: "WhatsOn API"
-  description: "Search for events"
+  title: "Spendings API"
+  description: "Control your expenditures"
   version: "1.0.0"
 consumes:
   - application/json
