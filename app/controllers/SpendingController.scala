@@ -56,7 +56,8 @@ class SpendingController @Inject()(cc: ControllerComponents,
   def updateSpending(id: Int) = silhouette.SecuredAction.async(parse.json(spendingReads)) { implicit request =>
     log.debug("Rest request to update spending")
 
-    val q = spending.filter(x => x.id === id.bind && x.userFk === request.identity.id.getOrElse(-1)).update(request.body)
+    val spend = request.body.copy(userFk = request.identity.id.getOrElse(-1))
+    val q = spending.filter(x => x.id === id.bind && x.userFk === request.identity.id.getOrElse(-1)).update(spend)
 
     db.run(q).map {
       case 0 => NotFound
@@ -69,8 +70,8 @@ class SpendingController @Inject()(cc: ControllerComponents,
                       from: Option[java.sql.Timestamp], to: Option[java.sql.Timestamp]) = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to search Spendings")
 
-    val fromO = from.getOrElse(new Timestamp(40000,0,0,0,0,0,0))
-    val toO = to.getOrElse(new Timestamp(0,0,0,0,0,0,0))
+    val fromO = from.getOrElse(new Timestamp(0,0,0,0,0,0,0))
+    val toO = to.getOrElse(new Timestamp(40000,0,0,0,0,0,0))
     toO.setHours(23)
     toO.setMinutes(59)
     toO.setSeconds(59)

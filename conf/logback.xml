@@ -27,6 +27,7 @@
   <logger name="play" level="DEBUG" />
   <logger name="application" level="DEBUG" />
   <logger name="rest" level="DEBUG" />
+  <logger name="api.spendings" level="DEBUG" />
 
   <!-- Off these ones as they are annoying, and anyway we manage configuration ourselves -->
   <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />
