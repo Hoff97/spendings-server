@@ -99,10 +99,13 @@ class SpendingController @Inject()(cc: ControllerComponents,
       s <- spending if s.date >= from
       if s.date <= to
       if s.userFk === request.identity.id.getOrElse(-1)
-    } yield s
+      c <- CategoryTable.category if c.id === s.categoryFk
+    } yield (s,c)
 
-    val s = q.groupBy(_.categoryFk).map{ case (c,s) => (c,s.map(_.amount).sum,s.length) }
-    db.run(s.result).map(x => Ok(Json.toJson(x)))
+    val s = q.groupBy(_._1.categoryFk).map{ case (c,sc) => (sc.map(_._2.name).min, sc.map(_._1.amount).sum, sc.map(_._1.amount).avg, sc.length) }
+    db.run(s.result).map(ls => Ok(Json.toJson(ls.map {
+      case (n,s,a,c) => Sum(n.getOrElse(""),s.map(_.toDouble).getOrElse(0.0),a.map(_.toDouble).getOrElse(0.0),c)
+    })))
   }
 
   def createSpending() = silhouette.SecuredAction.async(parse.json(spendingReads)) { implicit request =>
