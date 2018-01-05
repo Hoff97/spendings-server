@@ -1,7 +1,7 @@
 package controllers
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent._
 
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.Authenticator.Implicits._
@@ -84,28 +84,34 @@ class Authentication@Inject() (
    * @return The result to display.
    */
   def signUp = Action.async(parse.json) { implicit request =>
-    request.body.validate[SignUpForm.Data].map { data =>
-      val loginInfo = LoginInfo(CredentialsProvider.ID, data.email)
-      userService.retrieve(loginInfo).flatMap {
-        case Some(user) =>
-          Future.successful(BadRequest(Json.obj("message" -> "user.exists")))
-        case None =>
-          val authInfo = passwordHasher.hash(data.password)
-          val user = User(None, data.firstName + " " + data.lastName, data.email, None, None, None, loginInfo.providerID, loginInfo.providerKey)
-          for {
-            i <- db.run(UserTable.user += user)
-            authInfo <- authInfoRepository.add(loginInfo, authInfo)
-            authenticator <- silhouette.env.authenticatorService.create(loginInfo)
-            token <- silhouette.env.authenticatorService.init(authenticator)
-          } yield {
-            silhouette.env.eventBus.publish(SignUpEvent(user, request))
-            silhouette.env.eventBus.publish(LoginEvent(user, request))
-            Ok(Json.obj("token" -> token))
-          }
+    val max = configuration.getInt("maxUsers")
+    val c = Await.result(db.run(UserTable.user.result).map(_.length),Duration.Inf)
+    if(c>=max.getOrElse(0))
+      Future(Forbidden)
+    else {
+      request.body.validate[SignUpForm.Data].map { data =>
+        val loginInfo = LoginInfo(CredentialsProvider.ID, data.email)
+        userService.retrieve(loginInfo).flatMap {
+          case Some(user) =>
+            Future.successful(BadRequest(Json.obj("message" -> "user.exists")))
+          case None =>
+            val authInfo = passwordHasher.hash(data.password)
+            val user = User(None, data.firstName + " " + data.lastName, data.email, None, None, None, loginInfo.providerID, loginInfo.providerKey)
+            for {
+              i <- db.run(UserTable.user += user)
+              authInfo <- authInfoRepository.add(loginInfo, authInfo)
+              authenticator <- silhouette.env.authenticatorService.create(loginInfo)
+              token <- silhouette.env.authenticatorService.init(authenticator)
+            } yield {
+              silhouette.env.eventBus.publish(SignUpEvent(user, request))
+              silhouette.env.eventBus.publish(LoginEvent(user, request))
+              Ok(Json.obj("token" -> token))
+            }
+        }
+      }.recoverTotal {
+        case error =>
+          Future.successful(Unauthorized(Json.obj("message" -> "invalid.data")))
       }
-    }.recoverTotal {
-      case error =>
-        Future.successful(Unauthorized(Json.obj("message" -> "invalid.data")))
     }
 }
 
