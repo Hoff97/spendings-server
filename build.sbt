@@ -38,3 +38,6 @@ libraryDependencies ++= Seq(
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
 routesImport += "spendings.util.DateTime._"
+
+import com.typesafe.sbt.packager.MappingsHelper._
+mappings in Universal ++= directory(baseDirectory.value / "public")
