@@ -9,7 +9,9 @@
 #    200:
 #      description: success
 #      schema:
-#        $ref: '#/definitions/spendings.model.Category'
+#        type: array
+#        items:
+#          type: string
 ###
 GET      /   controllers.CategoryController.getCategories()
 

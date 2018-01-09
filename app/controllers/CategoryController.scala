@@ -28,10 +28,21 @@ class CategoryController @Inject()(cc: ControllerComponents,
 
   val log = Logger("api.spendings")
 
-  def getCategories() = silhouette.SecuredAction.async { implicit request: Request[AnyContent] =>
+  def getCategories() = silhouette.SecuredAction.async { implicit request =>
     log.debug("Rest request to get Categories")
 
-    db.run(category.result).map(x => Ok(Json.toJson(x)))
+    val q = for {
+      s <- SpendingTable.spending
+      if s.userFk === request.identity.id.getOrElse(-1)
+      c <- CategoryTable.category if c.id === s.categoryFk
+    } yield (s,c)
+
+    val s = q.groupBy(_._1.categoryFk)
+      .map{ case (c,sc) => (sc.map(_._2.name).min, sc.length) }
+      .sortBy (x => x._2.desc)
+    db.run(s.result).map(ls => Ok(Json.toJson(ls.map {
+                                                case (n,s) => n
+                                              })))
   }
 
   def createCategory() = silhouette.SecuredAction.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
