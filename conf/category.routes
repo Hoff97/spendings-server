@@ -11,7 +11,7 @@
 #      schema:
 #        type: array
 #        items:
-#          type: string
+#          $ref: '#/definitions/spendings.model.Category'
 ###
 GET      /   controllers.CategoryController.getCategories()
 

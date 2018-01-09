@@ -38,10 +38,10 @@ class CategoryController @Inject()(cc: ControllerComponents,
     } yield (s,c)
 
     val s = q.groupBy(_._1.categoryFk)
-      .map{ case (c,sc) => (sc.map(_._2.name).min, sc.length) }
-      .sortBy (x => x._2.desc)
+      .map{ case (c,sc) => (sc.map(_._2.name).min, sc.map(_._2.id).min, sc.length) }
+      .sortBy (x => x._3.desc)
     db.run(s.result).map(ls => Ok(Json.toJson(ls.map {
-                                                case (n,s) => n
+                                                case (n,id,s) => Category(id,n.getOrElse(""),0)
                                               })))
   }
 
