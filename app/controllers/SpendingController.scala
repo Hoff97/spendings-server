@@ -102,7 +102,9 @@ class SpendingController @Inject()(cc: ControllerComponents,
       c <- CategoryTable.category if c.id === s.categoryFk
     } yield (s,c)
 
-    val s = q.groupBy(_._1.categoryFk).map{ case (c,sc) => (sc.map(_._2.name).min, sc.map(_._1.amount).sum, sc.map(_._1.amount).avg, sc.length) }
+    val s = q.groupBy(_._1.categoryFk)
+      .map{ case (c,sc) => (sc.map(_._2.name).min, sc.map(_._1.amount).sum, sc.map(_._1.amount).avg, sc.length) }
+      .sortBy (x => x._2)
     db.run(s.result).map(ls => Ok(Json.toJson(ls.map {
       case (n,s,a,c) => Sum(n.getOrElse(""),s.map(_.toDouble).getOrElse(0.0),a.map(_.toDouble).getOrElse(0.0),c)
     })))
