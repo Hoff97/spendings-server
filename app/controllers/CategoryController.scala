@@ -28,28 +28,6 @@ class CategoryController @Inject()(cc: ControllerComponents,
 
   val log = Logger("api.spendings")
 
-  def deleteCategory(id: Int) = silhouette.SecuredAction.async { implicit request: Request[AnyContent] =>
-    log.debug("Rest request to delete category")
-
-    val q = category.filter(_.id === id.bind).delete
-
-    db.run(q).map {
-      case 0 => NotFound
-      case x => Ok(Json.toJson(x))
-    }
-  }
-
-  def updateCategory(id: Int) = silhouette.SecuredAction.async(parse.json(categoryReads)) { implicit request: Request[Category] =>
-    log.debug("Rest request to update category")
-
-    val q = category.filter(_.id === id.bind).update(request.body)
-
-    db.run(q).map {
-      case 0 => NotFound
-      case x => Ok(Json.toJson(x))
-    }
-  }
-
   def getCategories() = silhouette.SecuredAction.async { implicit request: Request[AnyContent] =>
     log.debug("Rest request to get Categories")
 

@@ -14,19 +14,6 @@
 GET      /   controllers.CategoryController.getCategories()
 
 ###
-#  summary: Delete a category
-#  parameters:
-#  - in: header
-#    name: x-auth-token
-#    schema:
-#      type: string
-#  responses:
-#    200:
-#      description: category deleted
-###
-DELETE   /:id                         controllers.CategoryController.deleteCategory(id: Int)
-
-###
 #  summary: Create a category
 #  parameters:
 #  - name: body
@@ -43,21 +30,3 @@ DELETE   /:id                         controllers.CategoryController.deleteCateg
 #        $ref: '#/definitions/spendings.model.Category'
 ###
 POST     /                            controllers.CategoryController.createCategory()
-
-###
-#  summary: Update a category with a specific id
-#  parameters:
-#  - name: body
-#    schema:
-#      $ref: '#/definitions/spendings.model.Category'
-#  - in: header
-#    name: x-auth-token
-#    schema:
-#      type: string
-#  responses:
-#    200:
-#      description: success
-#      schema:
-#        $ref: '#/definitions/spendings.model.Category'
-###
-PUT      /:id                         controllers.CategoryController.updateCategory(id: Int)
