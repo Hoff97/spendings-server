@@ -4,6 +4,7 @@ import spendings.model._
 import javax.inject._
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
+import scala.concurrent.Future
 
 
 class SimpleScanService @Inject()()
@@ -51,6 +52,6 @@ class SimpleScanService @Inject()()
         }
     }
 
-    ScanResult(prices.toList,List(),List(),dates.toList)
+    Future.successful(ScanResult(prices.toList,List(),List(),dates.toList))
   }
 }

@@ -9,5 +9,5 @@ import java.io._
 import scala.util._
 
 trait ScanService {
-  def scanText(text: String): ScanResult
+  def scanText(text: String): Future[ScanResult]
 }

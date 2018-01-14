@@ -15,6 +15,7 @@ import akka.util._
 import java.io._
 import org.apache.commons.io._
 import scala.util._
+import scala.concurrent.Future
 
 class ImageController @Inject()(cc: ControllerComponents,
                                 silhouette: Silhouette[AuthEnv],
@@ -37,7 +38,7 @@ class ImageController @Inject()(cc: ControllerComponents,
     }.getOrElse(BadRequest)
   }
 
-  def scanSpending = Action(parse.multipartFormData) { request =>
+  def scanSpending = Action(parse.multipartFormData).async { request =>
     log.debug("Rest request to scan image for spending data")
 
     request.body.file("image").map { x =>
@@ -47,7 +48,7 @@ class ImageController @Inject()(cc: ControllerComponents,
 
       val res = imageService.scan(bytes)
 
-      Ok(Json.toJson(scanService.scanText(res)))
-    }.getOrElse(BadRequest)
+      scanService.scanText(res).map(x => Ok(Json.toJson(x)))
+    }.getOrElse(Future.successful(BadRequest))
   }
 }
