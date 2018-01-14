@@ -54,4 +54,6 @@ class SimpleScanService @Inject()()
 
     Future.successful(ScanResult(prices.toList,List(),List(),dates.toList))
   }
+
+  def improveScan(scan: Scan, spending: Spending) = Future.successful()
 }

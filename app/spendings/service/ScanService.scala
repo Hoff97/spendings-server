@@ -10,4 +10,6 @@ import scala.util._
 
 trait ScanService {
   def scanText(text: String): Future[ScanResult]
+
+  def improveScan(scan: Scan, spending: Spending): Future[Unit]
 }
