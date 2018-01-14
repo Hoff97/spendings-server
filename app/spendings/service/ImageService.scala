@@ -5,14 +5,15 @@ import scala.concurrent.Future
 import org.opencv.core._
 import java.awt.image._
 import java.nio._
+import java.io._
 import scala.util._
 
 trait ImageService {
   def scan(b: Array[Byte]): Try[String] = {
     val mat = fromByteArray(b)
     val deskewed = deskew(mat)
-    val bufImg = toBufferedImage(toByteArray(deskewed))
-    detectText(bufImg)
+    val s = toInputStream(toByteArray(deskewed))
+    detectText(s)
   }
 
   def deskew(mat: Mat): Mat
@@ -21,7 +22,7 @@ trait ImageService {
 
   def toByteArray(mat: Mat): Array[Byte]
 
-  def toBufferedImage(b: Array[Byte]): BufferedImage
+  def toInputStream(b: Array[Byte]): InputStream
 
-  def detectText(b: BufferedImage): Try[String]
+  def detectText(s: InputStream): Try[String]
 }

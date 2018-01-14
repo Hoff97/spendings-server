@@ -20,9 +20,9 @@ import org.opencv.imgproc.Imgproc
 import java.nio._
 import java.io._
 import javax.imageio._
-import net.sourceforge.tess4j._
 import java.awt.image._
 import scala.util._
+import scala.sys.process._
 
 
 class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
@@ -63,20 +63,10 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
     bufMat.toArray()
   }
 
-  def toBufferedImage(b: Array[Byte]) = {
-    val input = new ByteArrayInputStream(b)
-    ImageIO.read(input)
-  }
+  def toInputStream(b: Array[Byte]) = new ByteArrayInputStream(b)
 
-  def detectText(b: BufferedImage) = {
-    val instance1: ITesseract = new Tesseract()
-    instance1.setLanguage("deu")
-
-    try {
-		  val result = instance1.doOCR(b)
-		  Success(result)
-	  } catch {
-      case e: TesseractException => Failure(e)
-	  }
+  def detectText(s: InputStream) = {
+    val res = ("tesseract stdin stdout -l deu" #< s).!!
+    Success(res)
   }
 }
