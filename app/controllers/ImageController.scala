@@ -8,7 +8,7 @@ import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json._
 import play.api.mvc._
-import spendings.model._
+import spendings.model.ScanResult._
 import spendings.auth._
 import spendings.service._
 import akka.util._
@@ -18,7 +18,8 @@ import scala.util._
 
 class ImageController @Inject()(cc: ControllerComponents,
                                 silhouette: Silhouette[AuthEnv],
-                                imageService: ImageService)
+                                imageService: ImageService,
+                                scanService: ScanService)
     (implicit context: ExecutionContext) extends AbstractController(cc) {
 
   val log = Logger("api.image")
@@ -31,13 +32,22 @@ class ImageController @Inject()(cc: ControllerComponents,
       val str = new FileInputStream(file)
       val bytes = IOUtils.toByteArray(str)
 
-      imageService.scan(bytes) match {
-        case Success(e) => {
-          log.debug(e)
-          Ok(e)
-        }
-        case Failure(e) => BadRequest
-      }
-    }.getOrElse(NotImplemented)
+      val res = imageService.scan(bytes)
+      Ok(res)
+    }.getOrElse(BadRequest)
+  }
+
+  def scanSpending = Action(parse.multipartFormData) { request =>
+    log.debug("Rest request to scan image for spending data")
+
+    request.body.file("image").map { x =>
+      val file = x.ref.path.toFile()
+      val str = new FileInputStream(file)
+      val bytes = IOUtils.toByteArray(str)
+
+      val res = imageService.scan(bytes)
+
+      Ok(Json.toJson(scanService.scanText(res)))
+    }.getOrElse(BadRequest)
   }
 }

@@ -47,7 +47,6 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
     }
     angle /= lines.rows()
     angle = angle/scala.math.Pi*180
-    println(angle)
 
     val rotated = new Mat()
     val rotate = Imgproc.getRotationMatrix2D(new Point(copy.rows()/2,copy.cols()/2),angle,1)
@@ -65,8 +64,5 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
 
   def toInputStream(b: Array[Byte]) = new ByteArrayInputStream(b)
 
-  def detectText(s: InputStream) = {
-    val res = ("tesseract stdin stdout -l deu" #< s).!!
-    Success(res)
-  }
+  def detectText(s: InputStream) = ("tesseract stdin stdout -l deu" #< s).!!
 }

@@ -36,6 +36,7 @@ class SilhouetteModule extends AbstractModule with ScalaModule {
     bind[AuthInfoRepository].to[AuthInfoService]
     bind[UserService].to[UserServiceImpl]
     bind[ImageService].to[ImageServiceImpl]
+    bind[ScanService].to[SimpleScanService]
   }
 
   @Provides

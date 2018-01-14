@@ -9,7 +9,7 @@ import java.io._
 import scala.util._
 
 trait ImageService {
-  def scan(b: Array[Byte]): Try[String] = {
+  def scan(b: Array[Byte]): String = {
     val mat = fromByteArray(b)
     val deskewed = deskew(mat)
     val s = toInputStream(toByteArray(deskewed))
@@ -24,5 +24,5 @@ trait ImageService {
 
   def toInputStream(b: Array[Byte]): InputStream
 
-  def detectText(s: InputStream): Try[String]
+  def detectText(s: InputStream): String
 }
