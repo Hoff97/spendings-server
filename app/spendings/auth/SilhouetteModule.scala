@@ -26,7 +26,7 @@ import net.ceedubs.ficus.Ficus._
 import scala.collection.immutable._
 
 class SilhouetteModule extends AbstractModule with ScalaModule {
-   override def configure() = {
+  override def configure() = {
     bind[Silhouette[AuthEnv]].to[SilhouetteProvider[AuthEnv]]
     bind[PasswordHasher].toInstance(new BCryptPasswordHasher())
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))
@@ -35,6 +35,7 @@ class SilhouetteModule extends AbstractModule with ScalaModule {
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[AuthInfoRepository].to[AuthInfoService]
     bind[UserService].to[UserServiceImpl]
+    bind[ImageService].to[ImageServiceImpl]
   }
 
   @Provides
