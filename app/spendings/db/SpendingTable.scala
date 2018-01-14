@@ -16,10 +16,12 @@ class SpendingTable(tag: Tag) extends Table[Spending](tag, "spending") with HasI
   def categoryFk = column[Int]("category_fk")
   def userFk = column[Int]("user_fk")
 
+  def scanFk = column[Int]("scan_fk")
+
   def creator = foreignKey("creator",userFk,UserTable.user)(_.id)
   def category = foreignKey("category",categoryFk,CategoryTable.category)(_.id)
 
-  def * = (id.?,amount,description,date,categoryFk,userFk) <> (Spending.tupled, Spending.unapply)
+  def * = (id.?,amount,description,date,categoryFk,userFk,scanFk.?) <> (Spending.tupled, Spending.unapply)
 }
 
 object SpendingTable {

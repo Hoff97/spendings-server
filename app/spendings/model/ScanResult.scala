@@ -2,7 +2,6 @@ package spendings.model
 
 import play.api.libs.json._
 import java.sql.Timestamp
-import spendings.model.ProbValue._
 import spendings.util.DateTime._
 
 case class ScanResult(price: List[BigDecimal], category: List[Category],
