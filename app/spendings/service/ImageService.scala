@@ -8,6 +8,13 @@ import java.nio._
 import scala.util._
 
 trait ImageService {
+  def scan(b: Array[Byte]): Try[String] = {
+    val mat = fromByteArray(b)
+    val deskewed = deskew(mat)
+    val bufImg = toBufferedImage(toByteArray(deskewed))
+    detectText(bufImg)
+  }
+
   def deskew(mat: Mat): Mat
 
   def fromByteArray(b: Array[Byte]): Mat

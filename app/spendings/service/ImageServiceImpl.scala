@@ -52,14 +52,14 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
     val rotated = new Mat()
     val rotate = Imgproc.getRotationMatrix2D(new Point(copy.rows()/2,copy.cols()/2),angle,1)
     Imgproc.warpAffine(copy,rotated,rotate,copy.size())
-    copy
+    rotated
   }
 
   def fromByteArray(b: Array[Byte]) = Imgcodecs.imdecode(new MatOfByte(b:_*), Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
 
   def toByteArray(mat: Mat): Array[Byte] = {
     val bufMat = new MatOfByte()
-    imencode("jpg", mat, bufMat)
+    imencode(".png", mat, bufMat)
     bufMat.toArray()
   }
 

@@ -53,3 +53,18 @@ POST   /user                   controllers.Authentication.user
 #      description: success
 ###
 POST   /signUp                   controllers.Authentication.signUp
+
+###
+#  summary: Scan an image
+#  consumes:
+#  - multipart/form-data
+#  parameters:
+#  - in: formData
+#    name: image
+#    type: file
+#    description: The file to upload.
+#  responses:
+#    200:
+#      description: success
+###
+POST   /image/scan                   controllers.ImageController.scanImage
