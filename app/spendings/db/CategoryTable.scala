@@ -8,9 +8,7 @@ class CategoryTable(tag: Tag) extends Table[Category](tag, "category") with HasI
   def id = column[Int]("id",O.PrimaryKey,O.AutoInc)
   def name = column[String]("name",O.Unique)
 
-  def parentFk = column[Int]("parent_fk")
-
-  def * = (id.?,name,parentFk) <> (Category.tupled, Category.unapply)
+  def * = (id.?,name) <> (Category.tupled, Category.unapply)
 }
 
 object CategoryTable {

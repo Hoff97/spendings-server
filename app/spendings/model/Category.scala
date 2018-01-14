@@ -2,7 +2,7 @@ package spendings.model
 
 import play.api.libs.json._
 
-case class Category(id: Option[Int], name: String, parent: Int) extends HasCopy[Category]{
+case class Category(id: Option[Int], name: String) extends HasCopy[Category]{
   def cpy(i: Option[Int]) = this.copy(id = i)
 }
 

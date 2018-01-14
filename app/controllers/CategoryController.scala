@@ -41,7 +41,7 @@ class CategoryController @Inject()(cc: ControllerComponents,
       .map{ case (c,sc) => (sc.map(_._2.name).min, sc.map(_._2.id).min, sc.length) }
       .sortBy (x => x._3.desc)
     db.run(s.result).map(ls => Ok(Json.toJson(ls.map {
-                                                case (n,id,s) => Category(id,n.getOrElse(""),0)
+                                                case (n,id,s) => Category(id,n.getOrElse(""))
                                               })))
   }
 
