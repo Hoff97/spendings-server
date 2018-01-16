@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import spendings.util.DateTime._
 
 case class ScanResult(price: List[BigDecimal], category: List[Category],
-                      description: List[String], date: List[Timestamp])
+                      description: String, date: List[Timestamp])
 
 object ScanResult {
   implicit val scanResultReads = Json.reads[ScanResult]

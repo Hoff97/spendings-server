@@ -117,6 +117,7 @@ class SpendingController @Inject()(cc: ControllerComponents,
 
     val inserted = db.run(insertAndReturn[Spending,SpendingTable](spending,s))
 
+    //TODO Call scan service learn method here
     inserted.map(x => Ok(Json.toJson(x)))
   }
 }

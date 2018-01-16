@@ -10,13 +10,13 @@ import scala.concurrent.Future
 class SimpleScanService @Inject()()
     extends ScanService {
 
-  val price = raw"(\d{1,10})[.,](\d{2})".r
+  val price = raw"(\d{1,10})\s?[\s.,]\s?(\d{2})".r
   val priceE = price.unanchored
 
   val priceIndicator = raw"(?i)(sum|summe|gesamt)".r
   val priceIndicatorE = priceIndicator.unanchored
 
-  val date = raw"(\d{2,4})([.-])(\d{1,2})[.-](\d{2,4})".r
+  val date = raw"(\d{2,4})\s?([\s.-])\s?(\d{1,2})\s?[\s.-]\s?(\d{2,4})".r
   val dateE = date.unanchored
 
   val dateIndicator = raw"(date|datum|dat)/i".r
@@ -52,7 +52,7 @@ class SimpleScanService @Inject()()
         }
     }
 
-    Future.successful(ScanResult(prices.toList,List(),List(),dates.toList))
+    Future.successful(ScanResult(prices.toList,List(),"",dates.toList))
   }
 
   def improveScan(scan: Scan, spending: Spending) = Future.successful()
