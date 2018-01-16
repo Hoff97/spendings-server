@@ -23,17 +23,24 @@ import javax.imageio._
 import java.awt.image._
 import scala.util._
 import scala.sys.process._
+import java.util._
+import scala.collection.JavaConversions._
 
 
 class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
     extends ImageService {
   nu.pattern.OpenCV.loadLocally()
 
+  def toBinary(mat: Mat): Mat = {
+    val t = mat.clone()
+
+    Imgproc.adaptiveThreshold(t, t, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 63, 10);
+
+    t
+  }
 
   def deskew(mat: Mat): Mat = {
     val t = mat.clone()
-    Imgproc.adaptiveThreshold(t, t, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 127, 10);
-    val copy = t.clone()
 
     Core.bitwise_not(t,t)
 
@@ -54,11 +61,9 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
       angle -= 90
 
     val rotated = new Mat()
-    val rotate = Imgproc.getRotationMatrix2D(new Point(copy.rows()/2,copy.cols()/2),angle,1)
-    Imgproc.warpAffine(copy,rotated,rotate,copy.size())
-    Imgcodecs.imwrite("yay.png", rotated)
+    val rotate = Imgproc.getRotationMatrix2D(new Point(mat.cols()/2,mat.rows()/2),angle,1)
+    Imgproc.warpAffine(mat,rotated,rotate,mat.size())
     rotated
-
   }
 
   def fromByteArray(b: Array[Byte]) = Imgcodecs.imdecode(new MatOfByte(b:_*), Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
@@ -71,5 +76,5 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
 
   def toInputStream(b: Array[Byte]) = new ByteArrayInputStream(b)
 
-  def detectText(s: InputStream) = ("tesseract stdin stdout -l deu" #< s).!!
+  def detectText(s: InputStream) = ("tesseract stdin stdout -l deu+eng -psm 1" #< s).!!
 }

@@ -11,10 +11,13 @@ import scala.util._
 trait ImageService {
   def scan(b: Array[Byte]): String = {
     val mat = fromByteArray(b)
-    val deskewed = deskew(mat)
+    //val deskewed = deskew(toBinary(mat))
+    val deskewed = toBinary(mat)
     val s = toInputStream(toByteArray(deskewed))
     detectText(s)
   }
+
+  def toBinary(mat: Mat): Mat
 
   def deskew(mat: Mat): Mat
 
