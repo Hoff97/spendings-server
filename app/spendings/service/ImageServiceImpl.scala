@@ -32,7 +32,7 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
 
   def deskew(mat: Mat): Mat = {
     val t = mat.clone()
-    Imgproc.adaptiveThreshold(t, t, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 127, 30);
+    Imgproc.adaptiveThreshold(t, t, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 127, 10);
     val copy = t.clone()
 
     Core.bitwise_not(t,t)
@@ -47,11 +47,18 @@ class ImageServiceImpl @Inject()(implicit context: ExecutionContext)
     }
     angle /= lines.rows()
     angle = angle/scala.math.Pi*180
+    println(angle)
+    if(angle< -45.0)
+      angle += 90
+    else if(angle > 45)
+      angle -= 90
 
     val rotated = new Mat()
     val rotate = Imgproc.getRotationMatrix2D(new Point(copy.rows()/2,copy.cols()/2),angle,1)
     Imgproc.warpAffine(copy,rotated,rotate,copy.size())
+    Imgcodecs.imwrite("yay.png", rotated)
     rotated
+
   }
 
   def fromByteArray(b: Array[Byte]) = Imgcodecs.imdecode(new MatOfByte(b:_*), Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
