@@ -26,6 +26,13 @@ class StatisticalScanService @Inject()(
 
   val format = new SimpleDateFormat("yyyy-MM-dd")
 
+  def upperWilson(c: Int, t: Int): Double = {
+    val zalpha = 1.96
+    val zalpha2 = Math.pow(zalpha,2)
+    val cf = c.toFloat/t
+    (cf+(zalpha2/(2*t))+zalpha*Math.sqrt((cf*(1-cf)+zalpha2/(4*t))/t))/(1+zalpha2/t)
+  }
+
   def findPrices(str: String): List[BigDecimal] = str match {
     case priceE(a,c) => List(new BigDecimal(new java.math.BigDecimal(a+"."+c)))
     case _ => List()
@@ -50,40 +57,40 @@ class StatisticalScanService @Inject()(
     res.filter(x => !res.exists(y => (y contains x) && y.length>x.length))
   }
 
-  def getCategoryProbability(c: Category, tokens: List[Int]): Future[Float] = Future.sequence(tokens.map(getCategoryProbability(c,_)))
+  def getCategoryProbability(c: Category, tokens: List[Int], default: (Int,Int)): Future[Double] = Future.sequence(tokens.map(getCategoryProbability(c,_,default)))
     .zip(getCategoryProbability(c))
     .map { case (l,f) => l.product*f}
 
-  def getCategoryProbability(c: Category, token: Int): Future[Float] = {
+  def getCategoryProbability(c: Category, token: Int, default: (Int,Int)): Future[Double] = {
     val q = for (p <- CategoryPTable.categoryP if p.categoryFk === c.id && p.tokenFk === token) yield (p.count,p.total)
 
-    db.run(q.result).map(x => x.headOption.getOrElse((1,1))).map { case (a,b) => a/b }
+    db.run(q.result).map(x => x.headOption.getOrElse(default)).map { case (a,b) => upperWilson(a, b) }
   }
   //TODO Make more efficient by adding count to category table
-  def getCategoryProbability(c: Category): Future[Float] = db.run(SpendingTable.spending.filter(_.categoryFk === c.id).length.result)
-    .zip(db.run(SpendingTable.spending.length.result)).map { case (a,b) => a/b }
+  def getCategoryProbability(c: Category): Future[Double] = db.run(SpendingTable.spending.filter(_.categoryFk === c.id).length.result)
+    .zip(db.run(SpendingTable.spending.length.result)).map { case (a,b) => upperWilson(a, b) }
 
-  def getPriceProbability(price: BigDecimal, tokens: List[Int]): Future[Float] = Future.sequence(tokens.map(getPriceProbability(_)))
+  def getPriceProbability(price: BigDecimal, tokens: List[Int]): Future[Double] = Future.sequence(tokens.map(getPriceProbability(_)))
     .zip(getPriceProbability(price))
     .map { case (l,f) => l.product*f}
-  def getPriceProbability(token: Int): Future[Float] = {
+  def getPriceProbability(token: Int): Future[Double] = {
     val q = for (p <- AmountPTable.amountP if p.tokenFk === token) yield (p.count,p.total)
 
-    db.run(q.result).map(x => x.headOption.getOrElse((1,1))).map { case (a,b) => a/b }
+    db.run(q.result).map(x => x.headOption.getOrElse((1,1))).map { case (a,b) => upperWilson(a, b) }
   }
   //TODO Normal distribution using spendings tables average and stddev
-  def getPriceProbability(price: BigDecimal): Future[Float] = Future.successful(1)
+  def getPriceProbability(price: BigDecimal): Future[Double] = Future.successful(1)
 
-  def getDateProbability(date: Timestamp, tokens: List[Int]): Future[Float] = Future.sequence(tokens.map(getDateProbability(_)))
+  def getDateProbability(date: Timestamp, tokens: List[Int]): Future[Double] = Future.sequence(tokens.map(getDateProbability(_)))
     .zip(getDateProbability(date))
     .map { case (l,f) => l.product*f}
-  def getDateProbability(token: Int): Future[Float] = {
+  def getDateProbability(token: Int): Future[Double] = {
     val q = for (p <- DatePTable.dateP if p.tokenFk === token) yield (p.count,p.total)
 
-    db.run(q.result).map(x => x.headOption.getOrElse((1,1))).map { case (a,b) => a/b }
+    db.run(q.result).map(x => x.headOption.getOrElse((1,1))).map { case (a,b) => upperWilson(a, b) }
   }
   //TODO Assume distribution giving more recent dates higher probability
-  def getDateProbability(date: Timestamp): Future[Float] = Future.successful(1)
+  def getDateProbability(date: Timestamp): Future[Double] = Future.successful(1)
 
   def getCategories(): Future[List[Category]] = db.run(CategoryTable.category.result).map(_.toList)
 
@@ -100,6 +107,12 @@ class StatisticalScanService @Inject()(
     }
   }
 
+  def getCategoriesDefault(): Future[(Int,Int)] = {
+    db.run((CategoryPTable.categoryP.map(_.count).sum.result).
+             zip(CategoryPTable.categoryP.map(_.total).sum.result)).map {
+      case (x,y) => (x.getOrElse(1),y.getOrElse(1))
+    }
+  }
 
   def scanText(text: String) = {
     val lines = text.split("\n")
@@ -108,12 +121,13 @@ class StatisticalScanService @Inject()(
     val allIds = getAllTokenIds()
 
     tokenIds.zip(allIds).flatMap { case (ids,allIds) =>
-      val cats = getCategories().flatMap { categories =>
+      val cats = getCategories().zip(getCategoriesDefault()).flatMap { case (categories,default) =>
         println(ids.length)
 
-        Future.sequence(categories.map(getCategoryProbability(_,ids))).map(_.zip(categories))
+        Future.sequence(categories.map(getCategoryProbability(_,ids,default))).map(_.zip(categories))
       }.map { case l =>
-          l.sortBy(_._1).map(_._2)
+          println(l.toString())
+          l.sortBy(x => -x._1).map(_._2)
       }
 
       val prices = lines.map(x => (x,findPrices(x))).map{ case (a,b) => (a,b.toList) }
@@ -123,7 +137,7 @@ class StatisticalScanService @Inject()(
         }.flatMap { l =>
           l.mapFuture { case (prices,t) => prices.mapFuture(x => getPriceProbability(x,t).map(p => (x,p))) }
         }.map { l =>
-          l.flatten.sortBy(_._2).map(x => x._1)
+          l.flatten.sortBy(x => -x._2).map(x => x._1)
         }
 
       val dates = lines.map(x => (x,findDates(x))).map{ case (a,b) => (a,b.toList) }
@@ -133,7 +147,7 @@ class StatisticalScanService @Inject()(
         }.flatMap { l =>
           l.mapFuture { case (dates,t) => dates.mapFuture(x => getDateProbability(x,t).map(p => (x,p))) }
         }.map { l =>
-          l.flatten.sortBy(_._2).map(x => x._1)
+          l.flatten.sortBy(x => -x._2).map(x => x._1)
         }
 
       val descr = Future.successful("")
@@ -157,7 +171,7 @@ class StatisticalScanService @Inject()(
 
     db.run(q.result).map(x => x.headOption).flatMap {
       case Some((c,t)) => db.run(q.update((c+token._2,t+1)))
-      case None => db.run(CategoryPTable.categoryP += CategoryP(None,c,token._1,1,1))
+      case None => db.run(CategoryPTable.categoryP += CategoryP(None,c,token._1,token._2,1))
     }
   }
 
@@ -168,7 +182,7 @@ class StatisticalScanService @Inject()(
 
     db.run(q.result).map(x => x.headOption).flatMap {
       case Some((c,t)) => db.run(q.update((c+token._2,t+1)))
-      case None => db.run(DescriptionPTable.descriptionP += DescriptionP(None,d,token._1,1,1))
+      case None => db.run(DescriptionPTable.descriptionP += DescriptionP(None,d,token._1,token._2,1))
     }
   }
 
@@ -181,14 +195,16 @@ class StatisticalScanService @Inject()(
     val allIds = getAllTokenIds()
 
     tokenIds.zip(allIds).zip(descrIds).flatMap { case ((ids,allIds),dIds) =>
-      val categories = updateCategoryProbabilities(spending.categoryFk, allIds.map(x => (x,if(ids.contains(x)) 1 else -1)))
-      val descriptions = Future.sequence(dIds.map(d => updateDescriptionobabilities(d, allIds.map(x => (x,if(ids.contains(x)) 1 else -1)))))
+      val categories = updateCategoryProbabilities(spending.categoryFk, allIds.map(x => (x,if(ids.contains(x)) 1 else 0)))
+      val descriptions = Future.sequence(dIds.map(d => updateDescriptionobabilities(d, allIds.map(x => (x,if(ids.contains(x)) 1 else 0)))))
 
       //TODO Price, date
       categories
         .zip(descriptions)
         .map (x => ())
     }
+
+    //TODO Delete scan
   }
   //TODO: Wahrscheinlichkeiten für category, description, amount, date(vlt nur wenn gesetztes Element der gefundenen?) anpassen
   //Tokens für neue description erstellen(upper/lowercase?)
