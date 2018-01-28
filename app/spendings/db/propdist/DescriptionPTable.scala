@@ -17,5 +17,5 @@ class DescriptionPTable(tag: Tag) extends Table[DescriptionP](tag, "description_
 }
 
 object DescriptionPTable {
-  val descriptionP = TableQuery[CategoryPTable]
+  val descriptionP = TableQuery[DescriptionPTable]
 }

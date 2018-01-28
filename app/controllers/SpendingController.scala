@@ -1,6 +1,6 @@
 package controllers
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent._
 
 import com.mohiva.play.silhouette.api._
 import javax.inject._
@@ -20,10 +20,12 @@ import spendings.model.detail.SpendingDetail._
 import java.sql.Timestamp
 import spendings.util.DateTime._
 import spendings.auth._
+import spendings.service._
 
 class SpendingController @Inject()(cc: ControllerComponents,
                                    protected val dbConfigProvider: DatabaseConfigProvider,
-                                   silhouette: Silhouette[AuthEnv])
+                                   silhouette: Silhouette[AuthEnv],
+                                   scanService: ScanService)
     (implicit context: ExecutionContext)
     extends AbstractController(cc)
     with HasDatabaseConfigProvider[JdbcProfile]{
@@ -115,9 +117,10 @@ class SpendingController @Inject()(cc: ControllerComponents,
 
     val s = request.body.copy(userFk = request.identity.id.getOrElse(request.body.userFk))
 
-    val inserted = db.run(insertAndReturn[Spending,SpendingTable](spending,s))
-
-    //TODO Call scan service learn method here
-    inserted.map(x => Ok(Json.toJson(x)))
+    db.run(insertAndReturn[Spending,SpendingTable](spending,s))
+      .flatMap(x => db.run(ScanTable.scan.filter(_.id === x.scanFk).result).map(_.headOption).flatMap {
+                 case Some(s) => scanService.improveScan(s,x).map(_ => x)
+                 case None => Future.successful(x)
+               }).map(x => Ok(Json.toJson(x)))
   }
 }

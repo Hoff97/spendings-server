@@ -4,7 +4,7 @@ import play.api.libs.json._
 import java.sql.Timestamp
 import spendings.util.DateTime._
 
-case class ScanResult(price: List[BigDecimal], category: List[Category],
+case class ScanResult(scanId: Int, price: List[BigDecimal], category: List[Category],
                       description: String, date: List[Timestamp])
 
 object ScanResult {

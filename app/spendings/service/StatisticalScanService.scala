@@ -12,6 +12,7 @@ import spendings.db.propdist._
 import spendings.db._
 import spendings.db.Util._
 import spendings.util.Util._
+import spendings.model.propdist._
 
 class StatisticalScanService @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider)(implicit context: ExecutionContext)
@@ -136,10 +137,12 @@ class StatisticalScanService @Inject()(
         }
 
       val descr = Future.successful("")
+      //TODO
 
-      cats.zip(prices).zip(dates).zip(descr).map { case (((category,price),date),description) =>
-        //TODO Create scan
-        ScanResult(price,category,description,date)
+      val createScan = db.run(insertAndReturn[Scan,ScanTable](ScanTable.scan, Scan(None,text)))
+
+      cats.zip(prices).zip(dates).zip(descr).zip(createScan).map { case ((((category,price),date),description),scan) =>
+        ScanResult(scan.id.getOrElse(-1),price,category,description,date)
       }
     }
   }
@@ -147,7 +150,46 @@ class StatisticalScanService @Inject()(
   //Für Amount, Date sind alle Zeilen, in der die Regex (siehe SimpleService) passt Kandidaten, die Token
   //werden nur aus der Zeile genommen, daraus Berechnet sich P(zi|t1..t(ni))
 
-  def improveScan(scan: Scan, spending: Spending) = Future.never
+  def updateCategoryProbabilities(c: Int, tokens: List[(Int,Int)]): Future[List[Int]] = Future.sequence(tokens.map(x => updateCategoryProbability(c,x)))
+
+  def updateCategoryProbability(c: Int, token: (Int,Int)): Future[Int] = {
+    val q = for (p <- CategoryPTable.categoryP if p.categoryFk === c && p.tokenFk === token._1) yield (p.count,p.total)
+
+    db.run(q.result).map(x => x.headOption).flatMap {
+      case Some((c,t)) => db.run(q.update((c+token._2,t+1)))
+      case None => db.run(CategoryPTable.categoryP += CategoryP(None,c,token._1,1,1))
+    }
+  }
+
+  def updateDescriptionobabilities(d: Int, tokens: List[(Int,Int)]): Future[List[Int]] = Future.sequence(tokens.map(x => updateDescriptionobabilitiy(d,x)))
+
+  def updateDescriptionobabilitiy(d: Int, token: (Int,Int)): Future[Int] = {
+    val q = for (p <- DescriptionPTable.descriptionP if p.descriptionFk === d && p.tokenFk === token._1) yield (p.count,p.total)
+
+    db.run(q.result).map(x => x.headOption).flatMap {
+      case Some((c,t)) => db.run(q.update((c+token._2,t+1)))
+      case None => db.run(DescriptionPTable.descriptionP += DescriptionP(None,d,token._1,1,1))
+    }
+  }
+
+  def improveScan(scan: Scan, spending: Spending) = {
+    val lines = scan.result.split("\n")
+    val descr = getTokens(spending.description)
+    val tokens = getTokens(lines)++descr
+    val tokenIds = getTokenIds(tokens)
+    val descrIds = getTokenIds(descr)
+    val allIds = getAllTokenIds()
+
+    tokenIds.zip(allIds).zip(descrIds).flatMap { case ((ids,allIds),dIds) =>
+      val categories = updateCategoryProbabilities(spending.categoryFk, allIds.map(x => (x,if(ids.contains(x)) 1 else -1)))
+      val descriptions = Future.sequence(dIds.map(d => updateDescriptionobabilities(d, allIds.map(x => (x,if(ids.contains(x)) 1 else -1)))))
+
+      //TODO Price, date
+      categories
+        .zip(descriptions)
+        .map (x => ())
+    }
+  }
   //TODO: Wahrscheinlichkeiten für category, description, amount, date(vlt nur wenn gesetztes Element der gefundenen?) anpassen
   //Tokens für neue description erstellen(upper/lowercase?)
 }
