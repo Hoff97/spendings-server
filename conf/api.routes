@@ -62,6 +62,10 @@ POST   /signUp                   controllers.Authentication.signUp
 #  - in: formData
 #    name: image
 #    type: file
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #    description: The file to upload.
 #  responses:
 #    200:
@@ -78,6 +82,10 @@ POST   /image/scan                   controllers.ImageController.scanImage
 #    name: image
 #    type: file
 #    description: The file to upload.
+#  - in: header
+#    name: x-auth-token
+#    schema:
+#      type: string
 #  responses:
 #    200:
 #      description: success

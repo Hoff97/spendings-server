@@ -25,7 +25,7 @@ class ImageController @Inject()(cc: ControllerComponents,
 
   val log = Logger("api.image")
 
-  def scanImage = Action(parse.multipartFormData) { request =>
+  def scanImage = silhouette.SecuredAction(parse.multipartFormData) { request =>
     log.debug("Rest request to scan image")
 
     request.body.file("image").map { x =>
@@ -38,7 +38,7 @@ class ImageController @Inject()(cc: ControllerComponents,
     }.getOrElse(BadRequest)
   }
 
-  def scanSpending = Action(parse.multipartFormData).async { request =>
+  def scanSpending = silhouette.SecuredAction.async(parse.multipartFormData) { request =>
     log.debug("Rest request to scan image for spending data")
 
     request.body.file("image").map { x =>
