@@ -3,6 +3,7 @@ logs
 node_modules/
 public/
 yarn.lock
+conf/production.conf
 
 # Created by https://www.gitignore.io/api/sbt
 
