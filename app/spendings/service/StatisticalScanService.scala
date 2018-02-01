@@ -199,7 +199,7 @@ class StatisticalScanService @Inject()(
         d.sortBy(x => -x._2).filter(x => !x._2.isNaN()).map(_._1).take(3)
       }
         .flatMap { d =>
-          d.mapFuture(getToken(_)).map(x => x.fold(""){ case (a,b) => a++" "++b})
+          d.mapFuture(getToken(_)).map(x => x.fold(""){ case (a,b) => if (a.length==0) b else a++" "++b})
         }
 
       val createScan = db.run(insertAndReturn[Scan,ScanTable](ScanTable.scan, Scan(None,text)))
